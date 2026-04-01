@@ -44,11 +44,24 @@ def get_app_password() -> str:
     1) Streamlit secrets: APP_PASSWORD
     2) Environment variable: APP_PASSWORD
     """
-    password_from_secrets = st.secrets.get("APP_PASSWORD")
-    if password_from_secrets:
-        return str(password_from_secrets)
+    for key in ("APP_PASSWORD", "PASSWORD_KEY"):
+        value = st.secrets.get(key)
+        if value:
+            return str(value).strip()
 
-    return os.getenv("APP_PASSWORD", "")
+    auth_section = st.secrets.get("auth")
+    if isinstance(auth_section, dict):
+        for key in ("APP_PASSWORD", "password", "PASSWORD_KEY"):
+            value = auth_section.get(key)
+            if value:
+                return str(value).strip()
+
+    for env_key in ("APP_PASSWORD", "PASSWORD_KEY"):
+        value = os.getenv(env_key, "").strip()
+        if value:
+            return value
+
+    return ""
 
 
 def password_gate() -> bool:
