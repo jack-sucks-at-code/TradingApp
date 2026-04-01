@@ -10,6 +10,7 @@ Beginner-friendly browser app for one-round-at-a-time market making:
 
 from __future__ import annotations
 
+import os
 from io import StringIO
 from typing import Dict, Tuple
 
@@ -33,6 +34,52 @@ TARGET_COLUMN_DEFAULT = "target"
 DEFAULT_RISK_MULTIPLIER = 1.0
 RANDOM_STATE = 42
 EPSILON_SPREAD = 1e-9
+
+
+def get_app_password() -> str:
+    """
+    Get app password from a non-committed source.
+
+    Priority:
+    1) Streamlit secrets: APP_PASSWORD
+    2) Environment variable: APP_PASSWORD
+    """
+    password_from_secrets = st.secrets.get("APP_PASSWORD")
+    if password_from_secrets:
+        return str(password_from_secrets)
+
+    return os.getenv("APP_PASSWORD", "")
+
+
+def password_gate() -> bool:
+    """Render the first screen as a password prompt and return auth status."""
+    if "authenticated" not in st.session_state:
+        st.session_state["authenticated"] = False
+
+    if st.session_state["authenticated"]:
+        return True
+
+    st.title("🔐 Secure Access")
+    st.write("Enter password to access the trading app.")
+
+    configured_password = get_app_password()
+    if not configured_password:
+        st.error(
+            "No app password configured. Set APP_PASSWORD in .streamlit/secrets.toml "
+            "or as an environment variable."
+        )
+        return False
+
+    entered_password = st.text_input("Password", type="password", key="password_input")
+    if st.button("Unlock", use_container_width=True):
+        if entered_password == configured_password:
+            st.session_state["authenticated"] = True
+            st.success("Access granted.")
+            st.rerun()
+        else:
+            st.error("Invalid password.")
+
+    return False
 
 
 def load_uploaded_csv(uploaded_file) -> pd.DataFrame:
@@ -163,6 +210,9 @@ def generate_quotes(prediction: float, rmse: float, risk_multiplier: float) -> T
 
 def main() -> None:
     st.set_page_config(page_title="Market Making Web GUI", page_icon="📈", layout="centered")
+
+    if not password_gate():
+        return
 
     st.title("📈 Market Making Hackathon Web GUI")
     st.caption("One round at a time: Upload train.csv → train models → upload test.csv → generate quotes")

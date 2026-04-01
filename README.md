@@ -110,11 +110,24 @@ pip install -r requirements.txt
 
 ### Recommended: Web GUI (super user-friendly)
 
+Before running, configure app password (not committed to repo):
+
+1. Create a local file `.streamlit/secrets.toml`
+2. Add:
+
+```toml
+APP_PASSWORD = "your-private-key"
+```
+
+You can also set environment variable `APP_PASSWORD` instead.
+
 ```bash
 streamlit run market_making_web.py
 ```
 
 Then open the local URL shown in terminal (usually `http://localhost:8501`).
+
+When the link opens, the first screen is a password prompt.
 
 Web flow:
 1. Upload **train.csv**
